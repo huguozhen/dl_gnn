@@ -42,7 +42,6 @@ class GCN(torch.nn.Module):
             h = F.relu(h)
             h = F.dropout(h, p=self.dropout, training=self.training)
         h = self.convs[-1](g, h)
-        # g.ndata['feat'] = h
         return h.log_softmax(dim=-1)
 
 def train(model, x, y_true, train_idx, optimizer):
@@ -99,13 +98,18 @@ def main():
     dataset = DglNodePropPredDataset(name = 'ogbn-arxiv')
 
     split_idx = dataset.get_idx_split()
-    train_idx, valid_idx, test_idx = split_idx["train"], split_idx["valid"], split_idx["test"]
+    # train_idx, valid_idx, test_idx = split_idx["train"], split_idx["valid"], split_idx["test"]
     graph, label = dataset[0] # graph: dgl graph object, label: torch tensor of shape (num_nodes, num_tasks)
-
     # data = dataset[0].to(device)
 
-    x = graph.ndata['feat'].to(device)
+    g = dgl.DGLGraph((graph.edges()[0], graph.edges()[1]))
+    g.add_edges(graph.edges()[1], graph.edges()[0])
+    g.ndata['feat'] = graph.ndata['feat']
+    print(g.edges()[1].size())
+
+    x = g.ndata['feat'].to(device)
     y_true = label.to(device)
+    
     train_idx = split_idx['train'].to(device)
 
     if args.use_sage:
@@ -123,8 +127,8 @@ def main():
         model.reset_parameters()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
         for epoch in range(1, 1 + args.epochs):
-            loss = train(model, graph, y_true, train_idx, optimizer)
-            result = test(model, graph, y_true, split_idx, evaluator)
+            loss = train(model, g, y_true, train_idx, optimizer)
+            result = test(model, g, y_true, split_idx, evaluator)
             logger.add_result(run, result)
 
             if epoch % args.log_steps == 0:
