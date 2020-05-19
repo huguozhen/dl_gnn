@@ -53,6 +53,7 @@ class GCN(torch.nn.Module):
         x = torch.mean(x, 1)
         x = F.relu(self.layer2(x))
         x = self.layer3(g, x)
+        x = torch.mean(x, 1)
         x = F.relu(self.layer4(x))
         x = self.layer5(g, x)
         x = x.squeeze(1)
