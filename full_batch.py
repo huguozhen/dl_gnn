@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import dgl
 from dgl.nn.pytorch import GraphConv
 from dgl.nn.pytorch import SAGEConv
+from dgl.nn.pytorch import GATConv
 
 from ogb.nodeproppred import DglNodePropPredDataset, Evaluator
 
@@ -17,38 +18,63 @@ class GCN(torch.nn.Module):
                  dropout):
         super(GCN, self).__init__()
 
-        self.convs = torch.nn.ModuleList()
-        self.convs.append(GraphConv(in_channels, hidden_channels))
-        self.bns = torch.nn.ModuleList()
-        self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
-        for _ in range(num_layers - 2):
-            self.convs.append(GraphConv(hidden_channels, hidden_channels))
-            self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
-        self.convs.append(GraphConv(hidden_channels, out_channels))
+        self.layer1 = GraphConv(in_channels, hidden_channels);
+        self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
+        self.layer3 = GATConv(hidden_channels, out_channels, 1, feat_drop=0.5)
+        # self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
+        # self.layer5 = SAGEConv(hidden_channels, out_channels, 'mean', feat_drop=0.6)
 
-        self.dropout = dropout
+        # self.convs = torch.nn.ModuleList()
+        # self.convs.append(GATConv(in_channels, hidden_channels, 8, feat_drop=0.6))
+        # self.bns = torch.nn.ModuleList()
+        # self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
+        # for _ in range(num_layers - 2):
+        #     self.convs.append(GATConv(hidden_channels, hidden_channels, 8, feat_drop=0.6))
+        #     self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
+        # self.convs.append(GATConv(hidden_channels, out_channels, 8, feat_drop=0.6))
+
+        # self.dropout = dropout
 
     def reset_parameters(self):
-        for conv in self.convs:
-            conv.reset_parameters()
-        for bn in self.bns:
-            bn.reset_parameters()
+        self.layer1.reset_parameters()
+        self.layer2.reset_parameters()
+        self.layer3.reset_parameters()
+        # self.layer4.reset_parameters()
+        # self.layer5.reset_parameters()
 
-    def forward(self, g):
-        h = g.ndata['feat'];
-        for i, conv in enumerate(self.convs[:-1]):
-            h = conv(g, h)
-            h = self.bns[i](h)
-            h = F.relu(h)
-            h = F.dropout(h, p=self.dropout, training=self.training)
-        h = self.convs[-1](g, h)
-        return h.log_softmax(dim=-1)
+        # for conv in self.convs:
+        #     conv.reset_parameters()
+        # for bn in self.bns:
+        #     bn.reset_parameters()
 
-def train(model, x, y_true, train_idx, optimizer):
+
+    def forward(self, g, x):
+        x = self.layer1(g, x)
+        # x = torch.mean(x, 1)
+        x = F.relu(self.layer2(x))
+        x = self.layer3(g, x)
+        # x = F.relu(self.layer4(x))
+        # x = self.layer5(g, x)
+        x = x.squeeze(1)
+        return x.log_softmax(dim=-1)
+
+        # h = x;
+        # for i, conv in enumerate(self.convs[:-1]):
+        #     h = conv(g, h)
+        #     h = torch.mean(h, 0)
+        #     print(h.size())
+        #     h = self.bns[i](h)
+        #     h = F.relu(h)
+        #     h = F.dropout(h, p=self.dropout, training=self.training)
+        # h = self.convs[-1](g, h)
+        # h = torch.mean(h, 0)
+        # return h.log_softmax(dim=-1)
+
+def train(model, g, x, y_true, train_idx, optimizer):
     model.train()
 
     optimizer.zero_grad()
-    out = model(x)[train_idx]
+    out = model(g, x)[train_idx]
     loss = F.nll_loss(out, y_true.squeeze(1)[train_idx])
     loss.backward()
     optimizer.step()
@@ -56,10 +82,10 @@ def train(model, x, y_true, train_idx, optimizer):
     return loss.item()
 
 @torch.no_grad()
-def test(model, x, y_true, split_idx, evaluator):
+def test(model, g, x, y_true, split_idx, evaluator):
     model.eval()
 
-    out = model(x)
+    out = model(g, x)
     y_pred = out.argmax(dim=-1, keepdim=True)
 
     train_acc = evaluator.eval({
@@ -82,7 +108,6 @@ def main():
     parser = argparse.ArgumentParser(description='OGBN-Arxiv (Full-Batch)')
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument('--log_steps', type=int, default=1)
-    parser.add_argument('--use_sage', action='store_true')
     parser.add_argument('--num_layers', type=int, default=3)
     parser.add_argument('--hidden_channels', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.5)
@@ -104,21 +129,16 @@ def main():
 
     g = dgl.DGLGraph((graph.edges()[0], graph.edges()[1]))
     g.add_edges(graph.edges()[1], graph.edges()[0])
-    g.ndata['feat'] = graph.ndata['feat']
-    print(g.edges()[1].size())
+    # g.ndata['feat'] = graph.ndata['feat']
+    # print(g.edges()[1].size())
 
-    x = g.ndata['feat'].to(device)
+    x = graph.ndata['feat'].to(device)
     y_true = label.to(device)
     
     train_idx = split_idx['train'].to(device)
 
-    if args.use_sage:
-        model = SAGE(x.size(-1), args.hidden_channels,
-                     dataset.num_classes, args.num_layers,
-                     args.dropout).to(device)
-    else:
-        model = GCN(x.size(-1), args.hidden_channels, dataset.num_classes,
-                    args.num_layers, args.dropout).to(device)
+    model = GCN(x.size(-1), args.hidden_channels, dataset.num_classes,
+                args.num_layers, args.dropout).to(device)
 
     evaluator = Evaluator(name='ogbn-arxiv')
     logger = Logger(args.runs, args)
@@ -127,8 +147,8 @@ def main():
         model.reset_parameters()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
         for epoch in range(1, 1 + args.epochs):
-            loss = train(model, g, y_true, train_idx, optimizer)
-            result = test(model, g, y_true, split_idx, evaluator)
+            loss = train(model, g, x, y_true, train_idx, optimizer)
+            result = test(model, g, x, y_true, split_idx, evaluator)
             logger.add_result(run, result)
 
             if epoch % args.log_steps == 0:
