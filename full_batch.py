@@ -18,7 +18,7 @@ class GCN(torch.nn.Module):
                  dropout):
         super(GCN, self).__init__()
 
-        self.layer1 = GATConv(in_channels, hidden_channels, 8, feat_drop=0.5, attn_drop=0.5);
+        self.layer1 = GraphConv(in_channels, hidden_channels);
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
         self.layer3 = GATConv(hidden_channels, hidden_channels, 8, feat_drop=0.5, attn_drop=0.5);
         self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
@@ -50,7 +50,6 @@ class GCN(torch.nn.Module):
 
     def forward(self, g, x):
         x = self.layer1(g, x)
-        x = torch.mean(x, 1)
         x = F.relu(self.layer2(x))
         x = self.layer3(g, x)
         x = torch.mean(x, 1)
