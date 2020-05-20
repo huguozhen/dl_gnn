@@ -19,7 +19,7 @@ class GCN(torch.nn.Module):
         super(GCN, self).__init__()
 
         self.layer1 = GATConv(in_channels, hidden_channels, 8, feat_drop=0.6, attn_drop=0.5)
-        self.layer2 = torch.nn.BatchNorm1d(hidden_channels*8)
+        self.layer2 = nn.BatchNorm1d(hidden_channels*8)
         self.layer3 = GATConv(hidden_channels*8, out_channels, 8, feat_drop=0.6, attn_drop=0.5)
 
     def reset_parameters(self):
@@ -28,7 +28,7 @@ class GCN(torch.nn.Module):
         self.layer3.reset_parameters()
 
     def forward(self, g, x):
-        x = self.layer1(g, x)
+        x = self.layer1(g, features)
         x = x.view(x.size(0), 1, -1).squeeze(1)
         x = self.layer2(x)
         x = F.relu(x)
