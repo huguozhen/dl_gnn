@@ -18,11 +18,11 @@ class GCN(torch.nn.Module):
                  dropout):
         super(GCN, self).__init__()
         
-        self.layer1 = GraphConv(in_channels, hidden_channels)
-        self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer3 = GATConv(hidden_channels, int(hidden_channels/8), 8, feat_drop=0.2)
-        self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer5 = GATConv(hidden_channels, out_channels, 8, feat_drop=0.2)
+        self.layer1 = GATConv(hidden_channels, hidden_channels, 8, feat_drop=0.2)
+        self.layer2 = torch.nn.BatchNorm1d(hidden_channels*8)
+        self.layer3 = GATConv(hidden_channels*8, hidden_channels, 8, feat_drop=0.3)
+        self.layer4 = torch.nn.BatchNorm1d(hidden_channels*8)
+        self.layer5 = GATConv(hidden_channels*8, out_channels, 8, feat_drop=0.4)
 
     def reset_parameters(self):
         self.layer1.reset_parameters()
@@ -33,6 +33,7 @@ class GCN(torch.nn.Module):
 
     def forward(self, g, x):
         x = self.layer1(g, x)
+        x = x.view(x.size(0), 1, -1).squeeze(1)
         x = self.layer2(x)
         x = F.relu(x)
         x = self.layer3(g, x)
@@ -112,6 +113,7 @@ def main():
 
     model = GCN(x.size(-1), args.hidden_channels, dataset.num_classes,
                 args.num_layers, args.dropout).to(device)
+    print(model)
 
     evaluator = Evaluator(name='ogbn-arxiv')
     logger = Logger(args.runs, args)
