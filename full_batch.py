@@ -18,57 +18,23 @@ class GCN(torch.nn.Module):
                  dropout):
         super(GCN, self).__init__()
 
-        self.layer1 = GraphConv(in_channels, hidden_channels);
-        self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer3 = GATConv(hidden_channels, hidden_channels, 8, feat_drop=0.5, attn_drop=0.5);
-        self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer5 = GATConv(hidden_channels, out_channels, 1, feat_drop=0.5, attn_drop=0.5);
-
-        # self.convs = torch.nn.ModuleList()
-        # self.convs.append(GATConv(in_channels, hidden_channels, 8, feat_drop=0.6))
-        # self.bns = torch.nn.ModuleList()
-        # self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
-        # for _ in range(num_layers - 2):
-        #     self.convs.append(GATConv(hidden_channels, hidden_channels, 8, feat_drop=0.6))
-        #     self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
-        # self.convs.append(GATConv(hidden_channels, out_channels, 8, feat_drop=0.6))
-
-        # self.dropout = dropout
+        self.layer1 = GATConv(in_channels, hidden_channels, 8, feat_drop=0.6, attn_drop=0.5)
+        self.layer2 = nn.BatchNorm1d(hidden_channels*8)
+        self.layer3 = GATConv(hidden_channels*8, out_channels, 8, feat_drop=0.6, attn_drop=0.5)
 
     def reset_parameters(self):
         self.layer1.reset_parameters()
         self.layer2.reset_parameters()
         self.layer3.reset_parameters()
-        self.layer4.reset_parameters()
-        self.layer5.reset_parameters()
-
-        # for conv in self.convs:
-        #     conv.reset_parameters()
-        # for bn in self.bns:
-        #     bn.reset_parameters()
-
 
     def forward(self, g, x):
-        x = self.layer1(g, x)
-        x = F.relu(self.layer2(x))
+        x = self.layer1(g, features)
+        x = x.view(x.size(0), 1, -1).squeeze(1)
+        x = self.layer2(x)
+        x = F.relu(x)
         x = self.layer3(g, x)
-        x = torch.mean(x, 1)
-        x = F.relu(self.layer4(x))
-        x = self.layer5(g, x)
-        x = x.squeeze(1)
+        x = torch.mean(x,1)
         return x.log_softmax(dim=-1)
-
-        # h = x;
-        # for i, conv in enumerate(self.convs[:-1]):
-        #     h = conv(g, h)
-        #     h = torch.mean(h, 0)
-        #     print(h.size())
-        #     h = self.bns[i](h)
-        #     h = F.relu(h)
-        #     h = F.dropout(h, p=self.dropout, training=self.training)
-        # h = self.convs[-1](g, h)
-        # h = torch.mean(h, 0)
-        # return h.log_softmax(dim=-1)
 
 def train(model, g, x, y_true, train_idx, optimizer):
     model.train()
