@@ -20,7 +20,7 @@ class GCN(torch.nn.Module):
         
         self.layer1 = GraphConv(in_channels, hidden_channels)
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer3 = GATConv(in_channels, hidden_channels/8, 8, feat_drop=0.2)
+        self.layer3 = GATConv(in_channels, int(hidden_channels/8), 8, feat_drop=0.2)
         self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
         self.layer5 = GATConv(hidden_channels, out_channels, 8, feat_drop=0.2)
 
