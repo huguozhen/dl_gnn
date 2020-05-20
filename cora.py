@@ -16,7 +16,7 @@ from dgl.nn.pytorch import GATConv
 # 1433 and the number of classes is 7). The last GCN layer computes node embeddings,
 # so the last layer in general does not apply activation.
 
-# multihead attention 的融合, 输入 k*m, 输出 1*m
+# multihead attention 的融合, 输入 n*k*m, 输出 n*m
 class MHI(nn.Module):
     def __init__(self, k, m):
         super(MHI, self).__init__()
@@ -34,14 +34,14 @@ class MHI(nn.Module):
         self.layer.reset_parameters()
         nn.init.xavier_normal_(self.a)
 
-    # 输入为 k*m
+    # 输入为 n*k*m
     def forward(self, x):
         feat = x
         x = self.layer(x)
         e = th.Tensor(self.k, 1)
 
-        x_mean = th.mean(x, 0)
         for i in range(self.k):
+          x_mean = (th.sum(x, 0) - x[i]) / (x.size(0)-1)
           e[i] = self.a.t() @ th.cat((x[i,:], x_mean), 0)
 
         e = F.relu(e)
@@ -52,9 +52,9 @@ class MHI(nn.Module):
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.layer1 = GATConv(1433, 8, 8, feat_drop=0.6)
-        self.layer2 = MHI(8, 8)
-        self.layer3 = GATConv(8, 7, 1, feat_drop=0.6)
+        self.layer1 = GATConv(1433, 16, 16)
+        self.layer2 = MHI(16, 16)
+        self.layer3 = GATConv(16, 7, 1)
 
     def forward(self, g, features):
         x = self.layer1(g, features)
@@ -108,7 +108,7 @@ import numpy as np
 g, features, labels, train_mask, test_mask = load_cora_data()
 optimizer = th.optim.Adam(net.parameters(), lr=1e-2)
 dur = []
-for epoch in range(100):
+for epoch in range(200):
 
     net.train()
     logits = net(g, features)
