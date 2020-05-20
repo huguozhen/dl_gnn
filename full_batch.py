@@ -18,7 +18,7 @@ class GCN(torch.nn.Module):
                  dropout):
         super(GCN, self).__init__()
         
-        self.layer1 = GATConv(hidden_channels, hidden_channels, 8, feat_drop=0.2)
+        self.layer1 = GATConv(in_channels, hidden_channels, 8, feat_drop=0.2)
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels*8)
         self.layer3 = GATConv(hidden_channels*8, hidden_channels, 8, feat_drop=0.3)
         self.layer4 = torch.nn.BatchNorm1d(hidden_channels*8)
