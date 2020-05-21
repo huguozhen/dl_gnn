@@ -22,14 +22,13 @@ class GCN(torch.nn.Module):
         super(GCN, self).__init__()
 
         self.layer1 = GATConv(
-            in_channels, hidden_channels, 8, feat_drop=0.65)
-        self.layer2 = torch.nn.BatchNorm1d(hidden_channels*8)
-        self.layer3 = SAGEConv(hidden_channels*8, hidden_channels*8, 'pool')
-        self.layer4 = torch.nn.BatchNorm1d(hidden_channels*8)
+            in_channels, hidden_channels, 4, feat_drop=0.6)
+        self.layer2 = torch.nn.BatchNorm1d(hidden_channels*4)
+        self.layer3 = GATConv(
+            hidden_channels*4, hidden_channels*4, feat_drop=0.6)
+        self.layer4 = torch.nn.BatchNorm1d(hidden_channels*4)
         self.layer5 = GATConv(
-            hidden_channels*8, hidden_channels, 8, feat_drop=0.65)
-        self.layer6 = torch.nn.BatchNorm1d(hidden_channels*8)
-        self.layer7 = SAGEConv(hidden_channels*8, out_channels, 'pool')
+            hidden_channels*4, out_channels, 4, feat_drop=0.6)
 
     def reset_parameters(self):
         self.layer1.reset_parameters()
@@ -37,8 +36,6 @@ class GCN(torch.nn.Module):
         self.layer3.reset_parameters()
         self.layer4.reset_parameters()
         self.layer5.reset_parameters()
-        self.layer6.reset_parameters()
-        self.layer7.reset_parameters()
 
     def forward(self, g, x):
         x = self.layer1(g, x)
@@ -46,13 +43,11 @@ class GCN(torch.nn.Module):
         x = self.layer2(x)
         x = F.relu(x)
         x = self.layer3(g, x)
+        x = x.view(x.size(0), 1, -1).squeeze(1)
         x = self.layer4(x)
         x = F.relu(x)
         x = self.layer5(g, x)
-        x = x.view(x.size(0), 1, -1).squeeze(1)
-        x = self.layer6(x)
-        x = F.relu(x)
-        x = self.layer7(g, x)
+        x = torch.mean(x, 1)
         return x.log_softmax(dim=-1)
 
 
