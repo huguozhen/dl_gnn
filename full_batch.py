@@ -22,12 +22,12 @@ class GCN(torch.nn.Module):
         super(GCN, self).__init__()
 
         self.layer1 = GATConv(
-            hidden_channels*8, hidden_channels, 8, feat_drop=0.5)
+            in_channels, hidden_channels, 8, feat_drop=0.65)
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels*8)
         self.layer3 = SAGEConv(hidden_channels*8, hidden_channels*8, 'pool')
         self.layer4 = torch.nn.BatchNorm1d(hidden_channels*8)
         self.layer5 = GATConv(
-            hidden_channels*8, hidden_channels, 8, feat_drop=0.5)
+            hidden_channels*8, hidden_channels, 8, feat_drop=0.65)
         self.layer6 = torch.nn.BatchNorm1d(hidden_channels*8)
         self.layer7 = SAGEConv(hidden_channels*8, out_channels, 'pool')
 
