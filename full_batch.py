@@ -19,7 +19,7 @@ from logger import Logger
 
 class CoNet(torch.nn.Module):
     def __init__(self, in_channels, out_channels, f_drop=0.3):
-        super(GCN, self).__init__()
+        super(CoNet, self).__init__()
 
         self.layer1 = SAGEConv(
             in_channels, out_channels, 'mean', feat_drop=f_drop)
@@ -28,7 +28,7 @@ class CoNet(torch.nn.Module):
         self.layer3 = SAGEConv(
             in_channels, out_channels, 'gcn', feat_drop=f_drop)
 
-        self.w = Parameter(torch.tensor([3, 1]))
+        self.w = Parameter(torch.tensor([3, 1, 0], dtype=torch.float))
 
     def reset_parameters(self):
 
