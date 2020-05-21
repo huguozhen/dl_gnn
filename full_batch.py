@@ -65,7 +65,7 @@ class GCN(torch.nn.Module):
 
         self.layer1 = CoNet(in_channels, hidden_channels)
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer3 = CoNet(hidden_channels, out_channels, f_drop=0.5)
+        self.layer3 = CoNet(hidden_channels, hidden_channels, f_drop=0.5)
         self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
         self.layer5 = CoNet(hidden_channels, out_channels, f_drop=0.5)
 
