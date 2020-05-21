@@ -27,14 +27,17 @@ class CoNet(torch.nn.Module):
             in_channels, out_channels, 'pool', feat_drop=f_drop)
         self.layer3 = SAGEConv(
             in_channels, out_channels, 'gcn', feat_drop=f_drop)
+        self.layer4 = GATConv(
+            in_channels, int(out_channels/8), 8, feat_drop=f_drop)
 
-        self.w = Parameter(torch.tensor([3, 1, 0], dtype=torch.float))
+        self.w = Parameter(torch.tensor([0, 0, 0, 0], dtype=torch.float))
 
     def reset_parameters(self):
 
         self.layer1.reset_parameters()
         self.layer2.reset_parameters()
         self.layer3.reset_parameters()
+        self.layer4.reset_parameters()
 
         init.uniform_(self.w)
 
@@ -43,10 +46,12 @@ class CoNet(torch.nn.Module):
         x1 = self.layer1(g, x)
         x2 = self.layer2(g, x)
         x3 = self.layer3(g, x)
+        x4 = self.layer4(g, x)
+        x4 = x4.view(x.size(0), 1, -1).squeeze(1)
 
         weights = F.softmax(self.w, dim=0)
 
-        return weights[0] * x1 + weights[1] * x2 + weights[2] * x3
+        return weights[0] * x1 + weights[1] * x2 + weights[2] * x3 + weights[3] * x4
 
 
 class GCN(torch.nn.Module):
