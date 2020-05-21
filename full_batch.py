@@ -22,7 +22,7 @@ class GCN(torch.nn.Module):
         super(GCN, self).__init__()
 
         self.layer1 = GATConv(
-            in_channels, hidden_channels, 8)
+            in_channels, hidden_channels, 8, feat_drop=0.6)
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels*8)
         self.layer3 = GraphConv(
             hidden_channels*8, hidden_channels*8)
@@ -42,9 +42,11 @@ class GCN(torch.nn.Module):
         x = x.view(x.size(0), 1, -1).squeeze(1)
         x = self.layer2(x)
         x = F.relu(x)
+        x = F.dropout(x, p=0.5, training=self.training)
         x = self.layer3(g, x)
         x = self.layer4(x)
         x = F.relu(x)
+        x = F.dropout(x, p=0.5, training=self.training)
         x = self.layer5(g, x)
         return x.log_softmax(dim=-1)
 
