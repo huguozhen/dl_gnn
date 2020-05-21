@@ -61,13 +61,14 @@ class GCN(torch.nn.Module):
         x = F.relu(x)
         x = F.dropout(x, p=self.dropout, training=self.training)
 
-        residual = x
         for i, conv in enumerate(self.convs[1:-1]):
+            residual = x
             x = conv(g, x)
             x = self.bns[i](x)
+            x += residual
             x = F.relu(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
-        x += residual
+
         x = self.convs[-1](g, x)
         # x = self.layer1(g, x)
         # # x = x.view(x.size(0), 1, -1).squeeze(1)
