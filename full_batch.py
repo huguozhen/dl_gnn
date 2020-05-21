@@ -57,6 +57,7 @@ class CoNet(torch.nn.Module):
         # x5 = self.layer5(g, x)
 
         weights = self.w / torch.sum(self.w, 0)
+        print(weights)
 
         return weights[0] * x1 + weights[1] * x2 + weights[2] * x3
 
@@ -69,16 +70,16 @@ class GCN(torch.nn.Module):
         self.layer1 = CoNet(in_channels, hidden_channels)
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
         self.layer3 = CoNet(hidden_channels, hidden_channels, f_drop=0.5)
-        self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer5 = CoNet(hidden_channels, out_channels, f_drop=0.7)
+        # self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
+        # self.layer5 = CoNet(hidden_channels, out_channels, f_drop=0.7)
 
     def reset_parameters(self):
 
         self.layer1.reset_parameters()
         self.layer2.reset_parameters()
         self.layer3.reset_parameters()
-        self.layer4.reset_parameters()
-        self.layer5.reset_parameters()
+        # self.layer4.reset_parameters()
+        # self.layer5.reset_parameters()
 
     def forward(self, g, x):
 
@@ -89,10 +90,10 @@ class GCN(torch.nn.Module):
         # x = F.dropout(x, p=0.6, training=self.training)
         x = self.layer3(g, x)
         # x = torch.mean(x, 1)
-        x = self.layer4(x)
-        x = F.relu(x)
+        # x = self.layer4(x)
+        # x = F.relu(x)
         # x = F.dropout(x, p=0.4, training=self.training)
-        x = self.layer5(g, x)
+        # x = self.layer5(g, x)
         # x = torch.mean(x, 1)
 
         return x.log_softmax(dim=-1)
