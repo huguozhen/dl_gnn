@@ -18,15 +18,15 @@ from logger import Logger
 
 
 class CoNet(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, f_drop=0.4):
+    def __init__(self, in_channels, out_channels, f_drop=0.2):
         super(CoNet, self).__init__()
 
         self.layer1 = SAGEConv(
             in_channels, out_channels, 'mean', feat_drop=f_drop)
         self.layer2 = SAGEConv(
             in_channels, out_channels, 'pool', feat_drop=f_drop)
-        self.layer3 = SAGEConv(
-            in_channels, out_channels, 'gcn', feat_drop=f_drop)
+        self.layer3 = GraphConv(
+            in_channels, out_channels)
         # self.layer4 = GATConv(
         #     in_channels, out_channels, 1, feat_drop=f_drop)
         # self.layer5 = GraphConv(
