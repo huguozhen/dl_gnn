@@ -22,13 +22,13 @@ class GCN(torch.nn.Module):
         super(GCN, self).__init__()
 
         self.layer1 = SAGEConv(
-            in_channels, hidden_channels, 'pool')
+            in_channels, hidden_channels, 'mean', feat_drop=0.3)
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
         self.layer3 = SAGEConv(
-            hidden_channels, hidden_channels, 'pool')
+            hidden_channels, hidden_channels, 'mean', feat_drop=0.3)
         self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer5 = GraphConv(
-            hidden_channels, out_channels, 'pool')
+        self.layer5 = GATConv(
+            hidden_channels, out_channels, 8, feat_drop=0.2)
 
     def reset_parameters(self):
         self.layer1.reset_parameters()
@@ -42,12 +42,13 @@ class GCN(torch.nn.Module):
         # x = x.view(x.size(0), 1, -1).squeeze(1)
         x = self.layer2(x)
         x = F.relu(x)
-        x = F.dropout(x, p=0.5, training=self.training)
+        # x = F.dropout(x, p=0.5, training=self.training)
         x = self.layer3(g, x)
         x = self.layer4(x)
         x = F.relu(x)
-        x = F.dropout(x, p=0.5, training=self.training)
+        # x = F.dropout(x, p=0.5, training=self.training)
         x = self.layer5(g, x)
+        x = torch.mean(x, 1)
         return x.log_softmax(dim=-1)
 
 
