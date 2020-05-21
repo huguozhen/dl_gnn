@@ -25,7 +25,9 @@ class CoNet(torch.nn.Module):
             in_channels, out_channels, 'mean', feat_drop=f_drop)
         self.layer2 = SAGEConv(
             in_channels, out_channels, 'pool', feat_drop=f_drop)
-        self.layer3 = GraphConv(in_channels, out_channels)
+        self.layer3 = SAGEConv(
+            in_channels, out_channels, 'gcn', feat_drop=f_drop)
+        # self.layer3 = GraphConv(in_channels, out_channels)
         # self.layer4 = GATConv(
         #     in_channels, out_channels, 1, feat_drop=f_drop)
         # self.layer5 = GraphConv(
@@ -49,12 +51,12 @@ class CoNet(torch.nn.Module):
         x1 = self.layer1(g, x)
         x2 = self.layer2(g, x)
         x3 = self.layer3(g, x)
-        x3 = F.dropout(x3, p=self.drop, training=self.training)
+        # x3 = F.dropout(x3, p=self.drop, training=self.training)
         # x4 = self.layer4(g, x)
         # x4 = x4.squeeze(1)
         # x5 = self.layer5(g, x)
 
-        weights = F.softmax(self.w, dim=0)
+        weights = self.w / torch.sum(self.w, 0)
 
         return weights[0] * x1 + weights[1] * x2 + weights[2] * x3
 
