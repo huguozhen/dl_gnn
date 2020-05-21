@@ -33,7 +33,7 @@ class CoNet(torch.nn.Module):
         # self.layer5 = GraphConv(
         #     in_channels, out_channels)
 
-        self.w = Parameter(torch.FloatTensor(3, out_channels, out_channels))
+        self.w = Parameter(torch.tensor([1, 1, 1], dtype=torch.float))
         self.drop = f_drop
 
     def reset_parameters(self):
@@ -58,7 +58,7 @@ class CoNet(torch.nn.Module):
 
         weights = self.w / torch.sum(self.w, 0)
 
-        return x1 @ weights[0] + x2 @ weights[1] + x3 @ weights[2]
+        return weights[0] * x1 + weights[1] * x2 + weights[2] * x3
 
 
 class GCN(torch.nn.Module):
