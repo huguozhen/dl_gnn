@@ -2,6 +2,7 @@ import argparse
 
 import torch
 from torch.nn import Parameter
+from torch.nn import init
 import torch.nn.functional as F
 
 import dgl
@@ -16,19 +17,48 @@ from logger import Logger
 # from radam import RAdam
 
 
+class CoNet(torch.nn.Module):
+    def __init__(self, in_channels, out_channels, f_drop=0.3):
+        super(GCN, self).__init__()
+
+        self.layer1 = SAGEConv(
+            in_channels, out_channels, 'mean', feat_drop=f_drop)
+        self.layer2 = SAGEConv(
+            in_channels, out_channels, 'pool', feat_drop=f_drop)
+        self.layer3 = SAGEConv(
+            in_channels, out_channels, 'gcn', feat_drop=f_drop)
+
+        self.w = Parameter(torch.tensor([3, 1]))
+
+    def reset_parameters(self):
+
+        self.layer1.reset_parameters()
+        self.layer2.reset_parameters()
+        self.layer3.reset_parameters()
+
+        init.uniform_(self.w)
+
+    def forward(self, g, x):
+
+        x1 = self.layer1(g, x)
+        x2 = self.layer2(g, x)
+        x3 = self.layer3(g, x)
+
+        weights = F.softmax(self.w, dim=0)
+
+        return weights[0] * x1 + weights[1] * x2 + weights[2] * x3
+
+
 class GCN(torch.nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, num_layers,
                  dropout):
         super(GCN, self).__init__()
 
-        self.layer1 = SAGEConv(
-            in_channels, hidden_channels, 'mean', feat_drop=0.3)
+        self.layer1 = CoNet(in_channels, hidden_channels)
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer3 = GATConv(
-            hidden_channels, hidden_channels, 8, feat_drop=0.3)
+        self.layer3 = CoNet(hidden_channels, hidden_channels)
         self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer5 = GATConv(
-            hidden_channels, out_channels, 8, feat_drop=0.3)
+        self.layer5 = CoNet(hidden_channels, out_channels)
 
     def reset_parameters(self):
 
@@ -46,12 +76,12 @@ class GCN(torch.nn.Module):
         x = F.relu(x)
         # x = F.dropout(x, p=0.5, training=self.training)
         x = self.layer3(g, x)
-        x = torch.mean(x, 1)
+        # x = torch.mean(x, 1)
         x = self.layer4(x)
         x = F.relu(x)
         # x = F.dropout(x, p=0.5, training=self.training)
         x = self.layer5(g, x)
-        x = torch.mean(x, 1)
+        # x = torch.mean(x, 1)
 
         return x.log_softmax(dim=-1)
 
