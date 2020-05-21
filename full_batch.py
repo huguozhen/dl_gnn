@@ -27,19 +27,19 @@ class CoNet(torch.nn.Module):
             in_channels, out_channels, 'pool', feat_drop=f_drop)
         self.layer3 = GraphConv(
             in_channels, out_channels)
-        # self.layer4 = GATConv(
-        #     in_channels, out_channels, 1, feat_drop=f_drop)
+        self.layer4 = GATConv(
+            in_channels, out_channels, 1, feat_drop=f_drop)
         # self.layer5 = GraphConv(
         #     in_channels, out_channels)
 
-        self.w = Parameter(torch.tensor([0, 0, 0], dtype=torch.float))
+        self.w = Parameter(torch.tensor([0, 0, 0, 0], dtype=torch.float))
 
     def reset_parameters(self):
 
         self.layer1.reset_parameters()
         self.layer2.reset_parameters()
         self.layer3.reset_parameters()
-        # self.layer4.reset_parameters()
+        self.layer4.reset_parameters()
         # self.layer5.reset_parameters()
 
         init.uniform_(self.w)
@@ -49,13 +49,13 @@ class CoNet(torch.nn.Module):
         x1 = self.layer1(g, x)
         x2 = self.layer2(g, x)
         x3 = self.layer3(g, x)
-        # x4 = self.layer4(g, x)
-        # x4 = x4.squeeze(1)
+        x4 = self.layer4(g, x)
+        x4 = x4.squeeze(1)
         # x5 = self.layer5(g, x)
 
         weights = F.softmax(F.leaky_relu(self.w), dim=0)
 
-        return weights[0] * x1 + weights[1] * x2 + weights[2] * x3
+        return weights[0] * x1 + weights[1] * x2 + weights[2] * x3 + weights[3] * x4
 
 
 class GCN(torch.nn.Module):
@@ -66,16 +66,16 @@ class GCN(torch.nn.Module):
         self.layer1 = CoNet(in_channels, hidden_channels)
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
         self.layer3 = CoNet(hidden_channels, out_channels, f_drop=0.5)
-        # self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
-        # self.layer5 = CoNet(hidden_channels, out_channels)
+        self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
+        self.layer5 = CoNet(hidden_channels, out_channels, f_drop=0.5)
 
     def reset_parameters(self):
 
         self.layer1.reset_parameters()
         self.layer2.reset_parameters()
         self.layer3.reset_parameters()
-        # self.layer4.reset_parameters()
-        # self.layer5.reset_parameters()
+        self.layer4.reset_parameters()
+        self.layer5.reset_parameters()
 
     def forward(self, g, x):
 
@@ -86,10 +86,10 @@ class GCN(torch.nn.Module):
         # x = F.dropout(x, p=0.5, training=self.training)
         x = self.layer3(g, x)
         # x = torch.mean(x, 1)
-        # x = self.layer4(x)
-        # x = F.relu(x)
+        x = self.layer4(x)
+        x = F.relu(x)
         # x = F.dropout(x, p=0.5, training=self.training)
-        # x = self.layer5(g, x)
+        x = self.layer5(g, x)
         # x = torch.mean(x, 1)
 
         return x.log_softmax(dim=-1)
