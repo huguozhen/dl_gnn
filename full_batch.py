@@ -25,21 +25,21 @@ class CoNet(torch.nn.Module):
             in_channels, out_channels, 'mean', feat_drop=f_drop)
         self.layer2 = SAGEConv(
             in_channels, out_channels, 'pool', feat_drop=f_drop)
-        self.layer3 = GraphConv(
-            in_channels, out_channels)
-        self.layer4 = GATConv(
-            in_channels, out_channels, 1, feat_drop=f_drop)
+        self.layer2 = SAGEConv(
+            in_channels, out_channels, 'gcn', feat_drop=f_drop)
+        # self.layer4 = GATConv(
+        #     in_channels, out_channels, 1, feat_drop=f_drop)
         # self.layer5 = GraphConv(
         #     in_channels, out_channels)
 
-        self.w = Parameter(torch.tensor([0, 0, 0, 0], dtype=torch.float))
+        self.w = Parameter(torch.tensor([0, 0, 0], dtype=torch.float))
 
     def reset_parameters(self):
 
         self.layer1.reset_parameters()
         self.layer2.reset_parameters()
         self.layer3.reset_parameters()
-        self.layer4.reset_parameters()
+        # self.layer4.reset_parameters()
         # self.layer5.reset_parameters()
 
         init.uniform_(self.w)
@@ -49,13 +49,13 @@ class CoNet(torch.nn.Module):
         x1 = self.layer1(g, x)
         x2 = self.layer2(g, x)
         x3 = self.layer3(g, x)
-        x4 = self.layer4(g, x)
-        x4 = x4.squeeze(1)
+        # x4 = self.layer4(g, x)
+        # x4 = x4.squeeze(1)
         # x5 = self.layer5(g, x)
 
-        weights = F.softmax(F.leaky_relu(self.w), dim=0)
+        weights = F.softmax(self.w, dim=0)
 
-        return weights[0] * x1 + weights[1] * x2 + weights[2] * x3 + weights[3] * x4
+        return weights[0] * x1 + weights[1] * x2 + weights[2] * x3
 
 
 class GCN(torch.nn.Module):
