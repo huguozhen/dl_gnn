@@ -58,7 +58,7 @@ class CoNet(torch.nn.Module):
 
         # weights = self.w / torch.sum(self.w, 0)
 
-        return x1 @ weights[0] + x2 @ weights[1] + x3 @ weights[2]
+        return x1 @ self.w[0] + x2 @ self.w[1] + x3 @ self.w[2]
 
 
 class GCN(torch.nn.Module):
