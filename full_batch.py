@@ -32,6 +32,7 @@ class CoNet(torch.nn.Module):
         #     in_channels, out_channels)
 
         self.w = Parameter(torch.tensor([0, 0, 0], dtype=torch.float))
+        self.drop = f_drop
 
     def reset_parameters(self):
 
@@ -48,6 +49,7 @@ class CoNet(torch.nn.Module):
         x1 = self.layer1(g, x)
         x2 = self.layer2(g, x)
         x3 = self.layer3(g, x)
+        x3 = F.dropout(x3, p=self.drop, training=self.training)
         # x4 = self.layer4(g, x)
         # x4 = x4.squeeze(1)
         # x5 = self.layer5(g, x)
@@ -62,9 +64,9 @@ class GCN(torch.nn.Module):
                  dropout):
         super(GCN, self).__init__()
 
-        self.layer1 = CoNet(in_channels, hidden_channels, f_drop=0.3)
+        self.layer1 = CoNet(in_channels, hidden_channels, f_drop=0.4)
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer3 = CoNet(hidden_channels, hidden_channels, f_drop=0.65)
+        self.layer3 = CoNet(hidden_channels, hidden_channels, f_drop=0.5)
         # self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
         # self.layer5 = CoNet(hidden_channels, out_channels, f_drop=0.6)
 
