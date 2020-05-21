@@ -62,9 +62,9 @@ class GCN(torch.nn.Module):
                  dropout):
         super(GCN, self).__init__()
 
-        self.layer1 = CoNet(in_channels, hidden_channels)
+        self.layer1 = CoNet(in_channels, hidden_channels, f_drop=0.3)
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer3 = CoNet(hidden_channels, hidden_channels)
+        self.layer3 = CoNet(hidden_channels, hidden_channels, f_drop=0.65)
         # self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
         # self.layer5 = CoNet(hidden_channels, out_channels, f_drop=0.6)
 
@@ -82,7 +82,7 @@ class GCN(torch.nn.Module):
         # x = x.view(x.size(0), 1, -1).squeeze(1)
         x = self.layer2(x)
         x = F.relu(x)
-        x = F.dropout(x, p=0.6, training=self.training)
+        # x = F.dropout(x, p=0.6, training=self.training)
         x = self.layer3(g, x)
         # x = torch.mean(x, 1)
         # x = self.layer4(x)
@@ -173,7 +173,7 @@ def main():
     for run in range(args.runs):
         model.reset_parameters()
         optimizer = torch.optim.Adam(
-            model.parameters(), lr=args.lr, weight_decay=0.0005)
+            model.parameters(), lr=args.lr)
         for epoch in range(1, 1 + args.epochs):
             loss = train(model, g, x, y_true, train_idx, optimizer)
             result = test(model, g, x, y_true, split_idx, evaluator)
