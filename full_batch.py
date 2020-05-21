@@ -141,7 +141,8 @@ def main():
     parser.add_argument('--num_layers', type=int, default=3)
     parser.add_argument('--hidden_channels', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.5)
-    parser.add_argument('--lr', type=float, default=0.01)
+    parser.add_argument('--lr', type=float, default=0.001)
+    parser.add_argument('--wd', type=float, default=0.0002)
     parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--runs', type=int, default=10)
     args = parser.parse_args()
@@ -178,7 +179,7 @@ def main():
     for run in range(args.runs):
         model.reset_parameters()
         optimizer = torch.optim.Adam(
-            model.parameters(), lr=args.lr)
+            model.parameters(), lr=args.lr, weight_decay=args.wd)
         for epoch in range(1, 1 + args.epochs):
             loss = train(model, g, x, y_true, train_idx, optimizer)
             result = test(model, g, x, y_true, split_idx, evaluator)
