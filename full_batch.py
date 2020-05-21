@@ -15,16 +15,19 @@ from logger import Logger
 
 # from radam import RAdam
 
+
 class GCN(torch.nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, num_layers,
                  dropout):
         super(GCN, self).__init__()
-        
-        self.layer1 = GATConv(hidden_channels*8, hidden_channels, 8, feat_drop=0.2)
+
+        self.layer1 = GATConv(
+            hidden_channels*8, hidden_channels, 8, feat_drop=0.5)
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels*8)
         self.layer3 = SAGEConv(hidden_channels*8, hidden_channels*8, 'pool')
         self.layer4 = torch.nn.BatchNorm1d(hidden_channels*8)
-        self.layer5 = GATConv(hidden_channels*8, hidden_channels, 8)
+        self.layer5 = GATConv(
+            hidden_channels*8, hidden_channels, 8, feat_drop=0.5)
         self.layer6 = torch.nn.BatchNorm1d(hidden_channels*8)
         self.layer7 = SAGEConv(hidden_channels*8, out_channels, 'pool')
 
@@ -52,6 +55,7 @@ class GCN(torch.nn.Module):
         x = self.layer7(g, x)
         return x.log_softmax(dim=-1)
 
+
 def train(model, g, x, y_true, train_idx, optimizer):
     model.train()
 
@@ -62,6 +66,7 @@ def train(model, g, x, y_true, train_idx, optimizer):
     optimizer.step()
 
     return loss.item()
+
 
 @torch.no_grad()
 def test(model, g, x, y_true, split_idx, evaluator):
@@ -102,11 +107,12 @@ def main():
     device = f'cuda:{args.device}' if torch.cuda.is_available() else 'cpu'
     device = torch.device(device)
 
-    dataset = DglNodePropPredDataset(name = 'ogbn-arxiv')
+    dataset = DglNodePropPredDataset(name='ogbn-arxiv')
 
     split_idx = dataset.get_idx_split()
     # train_idx, valid_idx, test_idx = split_idx["train"], split_idx["valid"], split_idx["test"]
-    graph, label = dataset[0] # graph: dgl graph object, label: torch tensor of shape (num_nodes, num_tasks)
+    # graph: dgl graph object, label: torch tensor of shape (num_nodes, num_tasks)
+    graph, label = dataset[0]
     # data = dataset[0].to(device)
 
     g = dgl.DGLGraph((graph.edges()[0], graph.edges()[1]))
@@ -116,7 +122,7 @@ def main():
 
     x = graph.ndata['feat'].to(device)
     y_true = label.to(device)
-    
+
     train_idx = split_idx['train'].to(device)
 
     model = GCN(x.size(-1), args.hidden_channels, dataset.num_classes,
