@@ -63,19 +63,19 @@ class GCN(torch.nn.Module):
                  dropout):
         super(GCN, self).__init__()
 
-        self.layer1 = CoNet(in_channels, hidden_channels)
+        self.layer1 = CoNet(in_channels, hidden_channels, f_drop=0.3)
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer3 = CoNet(hidden_channels, hidden_channels)
-        self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer5 = CoNet(hidden_channels, out_channels)
+        self.layer3 = CoNet(hidden_channels, out_channels, f_drop=0.3)
+        # self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
+        # self.layer5 = CoNet(hidden_channels, out_channels)
 
     def reset_parameters(self):
 
         self.layer1.reset_parameters()
         self.layer2.reset_parameters()
         self.layer3.reset_parameters()
-        self.layer4.reset_parameters()
-        self.layer5.reset_parameters()
+        # self.layer4.reset_parameters()
+        # self.layer5.reset_parameters()
 
     def forward(self, g, x):
 
@@ -86,10 +86,10 @@ class GCN(torch.nn.Module):
         # x = F.dropout(x, p=0.5, training=self.training)
         x = self.layer3(g, x)
         # x = torch.mean(x, 1)
-        x = self.layer4(x)
-        x = F.relu(x)
+        # x = self.layer4(x)
+        # x = F.relu(x)
         # x = F.dropout(x, p=0.5, training=self.training)
-        x = self.layer5(g, x)
+        # x = self.layer5(g, x)
         # x = torch.mean(x, 1)
 
         return x.log_softmax(dim=-1)
@@ -174,7 +174,7 @@ def main():
     for run in range(args.runs):
         model.reset_parameters()
         optimizer = torch.optim.Adam(
-            model.parameters(), lr=args.lr, weight_decay=0.0001)
+            model.parameters(), lr=args.lr)
         for epoch in range(1, 1 + args.epochs):
             loss = train(model, g, x, y_true, train_idx, optimizer)
             result = test(model, g, x, y_true, split_idx, evaluator)
