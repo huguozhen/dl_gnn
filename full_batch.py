@@ -25,7 +25,7 @@ class GCN(torch.nn.Module):
             in_channels, hidden_channels, 4, feat_drop=0.6)
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels*4)
         self.layer3 = GATConv(
-            hidden_channels*4, hidden_channels*4, feat_drop=0.6)
+            hidden_channels*4, hidden_channels*4, 4, feat_drop=0.6)
         self.layer4 = torch.nn.BatchNorm1d(hidden_channels*4)
         self.layer5 = GATConv(
             hidden_channels*4, out_channels, 4, feat_drop=0.6)
@@ -43,7 +43,7 @@ class GCN(torch.nn.Module):
         x = self.layer2(x)
         x = F.relu(x)
         x = self.layer3(g, x)
-        x = x.view(x.size(0), 1, -1).squeeze(1)
+        x = torch.mean(x, 1)
         x = self.layer4(x)
         x = F.relu(x)
         x = self.layer5(g, x)
