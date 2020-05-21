@@ -56,16 +56,19 @@ class GCN(torch.nn.Module):
         # self.layer5.reset_parameters()
 
     def forward(self, g, x):
-        residual = x
+        x = self.convs[0](g, x)
+        x = self.bns[0](x)
+        x = F.relu(x)
+        x = F.dropout(x, p=self.dropout, training=self.training)
 
-        for i, conv in enumerate(self.convs[:-1]):
+        residual = x
+        for i, conv in enumerate(self.convs[1:-1]):
             x = conv(g, x)
             x = self.bns[i](x)
             x = F.relu(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
-        x = self.convs[-1](g, x)
-
         x += residual
+        x = self.convs[-1](g, x)
         # x = self.layer1(g, x)
         # # x = x.view(x.size(0), 1, -1).squeeze(1)
         # x = self.layer2(x)
