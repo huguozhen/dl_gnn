@@ -21,34 +21,60 @@ class GCN(torch.nn.Module):
                  dropout):
         super(GCN, self).__init__()
 
-        self.layer1 = SAGEConv(
-            in_channels, hidden_channels, 'mean', feat_drop=0.3)
-        self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer3 = SAGEConv(
-            hidden_channels, hidden_channels, 'mean', feat_drop=0.3)
-        self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer5 = GATConv(
-            hidden_channels, out_channels, 8, feat_drop=0.2)
+        self.convs = torch.nn.ModuleList()
+        self.convs.append(SAGEConv(in_channels, hidden_channels, 'mean'))
+        self.bns = torch.nn.ModuleList()
+        self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
+        for _ in range(num_layers - 2):
+            self.convs.append(
+                SAGEConv(hidden_channels, hidden_channels, 'mean'))
+            self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
+        self.convs.append(SAGEConv(hidden_channels, out_channels, 'mean'))
+
+        self.dropout = dropout
+
+        # self.layer1 = SAGEConv(
+        #     in_channels, hidden_channels, 'mean', feat_drop=0.3)
+        # self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
+        # self.layer3 = SAGEConv(
+        #     hidden_channels, hidden_channels, 'mean', feat_drop=0.3)
+        # self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
+        # self.layer5 = GATConv(
+        #     hidden_channels, out_channels, 8, feat_drop=0.2)
 
     def reset_parameters(self):
-        self.layer1.reset_parameters()
-        self.layer2.reset_parameters()
-        self.layer3.reset_parameters()
-        self.layer4.reset_parameters()
-        self.layer5.reset_parameters()
+
+        for conv in self.convs:
+            conv.reset_parameters()
+        for bn in self.bns:
+            bn.reset_parameters()
+
+        # self.layer1.reset_parameters()
+        # self.layer2.reset_parameters()
+        # self.layer3.reset_parameters()
+        # self.layer4.reset_parameters()
+        # self.layer5.reset_parameters()
 
     def forward(self, g, x):
-        x = self.layer1(g, x)
-        # x = x.view(x.size(0), 1, -1).squeeze(1)
-        x = self.layer2(x)
-        x = F.relu(x)
-        # x = F.dropout(x, p=0.5, training=self.training)
-        x = self.layer3(g, x)
-        x = self.layer4(x)
-        x = F.relu(x)
-        # x = F.dropout(x, p=0.5, training=self.training)
-        x = self.layer5(g, x)
-        x = torch.mean(x, 1)
+        for i, conv in enumerate(self.convs[:-1]):
+            x = conv(g, x)
+            x = self.bns[i](x)
+            x = F.relu(x)
+            x = F.dropout(x, p=self.dropout, training=self.training)
+        x = self.convs[-1](g, x)
+
+        # x = self.layer1(g, x)
+        # # x = x.view(x.size(0), 1, -1).squeeze(1)
+        # x = self.layer2(x)
+        # x = F.relu(x)
+        # # x = F.dropout(x, p=0.5, training=self.training)
+        # x = self.layer3(g, x)
+        # x = self.layer4(x)
+        # x = F.relu(x)
+        # # x = F.dropout(x, p=0.5, training=self.training)
+        # x = self.layer5(g, x)
+        # x = torch.mean(x, 1)
+
         return x.log_softmax(dim=-1)
 
 
