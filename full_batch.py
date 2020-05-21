@@ -27,7 +27,7 @@ class GCN(torch.nn.Module):
         self.layer3 = GATConv(
             hidden_channels, hidden_channels, 8, feat_drop=0.3)
         self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer5 = SAGEConv(
+        self.layer5 = GATConv(
             hidden_channels, out_channels, 8, feat_drop=0.3)
 
     def reset_parameters(self):
