@@ -173,7 +173,8 @@ def main():
 
     for run in range(args.runs):
         model.reset_parameters()
-        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+        optimizer = torch.optim.RMSprop(
+            model.parameters(), lr=args.lr, weight_decay=0.01)
         for epoch in range(1, 1 + args.epochs):
             loss = train(model, g, x, y_true, train_idx, optimizer)
             result = test(model, g, x, y_true, split_idx, evaluator)
