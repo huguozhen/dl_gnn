@@ -25,7 +25,7 @@ class CoNet(torch.nn.Module):
             in_channels, out_channels, 'mean', feat_drop=f_drop)
         self.layer2 = SAGEConv(
             in_channels, out_channels, 'pool', feat_drop=f_drop)
-        self.layer2 = SAGEConv(
+        self.layer3 = SAGEConv(
             in_channels, out_channels, 'gcn', feat_drop=f_drop)
         # self.layer4 = GATConv(
         #     in_channels, out_channels, 1, feat_drop=f_drop)
