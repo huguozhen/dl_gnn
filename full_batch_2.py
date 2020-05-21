@@ -123,7 +123,7 @@ def main():
 
     g = dgl.DGLGraph((graph.edges()[0], graph.edges()[1]))
     g.add_edges(graph.edges()[1], graph.edges()[0])
-    adj = SparseTensor(row=g.edges()[0], col=g.edges()[1])
+    adj = SparseTensor(row=g.edges()[0].to(device), col=g.edges()[1].to(device))
 
     x = graph.ndata['feat'].to(device)
     y_true = label.to(device)
