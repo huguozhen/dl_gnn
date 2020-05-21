@@ -2,16 +2,19 @@ import argparse
 
 import torch
 from torch.nn import Parameter
+from torch.nn import init
 import torch.nn.functional as F
 
-from torch_sparse import SparseTensor
-from torch_geometric.utils import to_undirected
-from torch_geometric.nn.inits import glorot, zeros
+import dgl
+from dgl.nn.pytorch import GraphConv
+from dgl.nn.pytorch import SAGEConv
+from dgl.nn.pytorch import GATConv
 
-from ogb.nodeproppred import PygNodePropPredDataset, Evaluator
+from ogb.nodeproppred import DglNodePropPredDataset, Evaluator
+
+from torch_sparse import SparseTensor
 
 from logger import Logger
-
 
 class GCNConv(torch.nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -26,12 +29,11 @@ class GCNConv(torch.nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        glorot(self.weight)
-        zeros(self.bias)
+        init.uniform_(self.weight)
+        init.uniform_(self.bias)
 
     def forward(self, x, adj):
         return adj @ x @ self.weight
-
 
 class GCN(torch.nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, num_layers,
@@ -64,61 +66,6 @@ class GCN(torch.nn.Module):
         x = self.convs[-1](x, adj)
         return x.log_softmax(dim=-1)
 
-
-class SAGEConv(torch.nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super(SAGEConv, self).__init__()
-
-        self.in_channels = in_channels
-        self.out_channels = out_channels
-
-        self.weight = Parameter(torch.Tensor(in_channels, out_channels))
-        self.root_weight = Parameter(torch.Tensor(in_channels, out_channels))
-        self.bias = Parameter(torch.Tensor(out_channels))
-
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        glorot(self.weight)
-        glorot(self.root_weight)
-        zeros(self.bias)
-
-    def forward(self, x, adj):
-        out = adj.matmul(x, reduce="mean") @ self.weight
-        out = out + x @ self.root_weight + self.bias
-        return out
-
-
-class SAGE(torch.nn.Module):
-    def __init__(self, in_channels, hidden_channels, out_channels, num_layers,
-                 dropout):
-        super(SAGE, self).__init__()
-
-        self.convs = torch.nn.ModuleList()
-        self.convs.append(SAGEConv(in_channels, hidden_channels))
-        self.bns = torch.nn.ModuleList()
-        self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
-        for _ in range(num_layers - 2):
-            self.convs.append(SAGEConv(hidden_channels, hidden_channels))
-            self.bns.append(torch.nn.BatchNorm1d(hidden_channels))
-        self.convs.append(SAGEConv(hidden_channels, out_channels))
-
-        self.dropout = dropout
-
-    def reset_parameters(self):
-        for conv in self.convs:
-            conv.reset_parameters()
-
-    def forward(self, x, adj):
-        for i, conv in enumerate(self.convs[:-1]):
-            x = conv(x, adj)
-            x = self.bns[i](x)
-            x = F.relu(x)
-            x = F.dropout(x, p=self.dropout, training=self.training)
-        x = self.convs[-1](x, adj)
-        return x.log_softmax(dim=-1)
-
-
 def train(model, x, adj, y_true, train_idx, optimizer):
     model.train()
 
@@ -129,7 +76,6 @@ def train(model, x, adj, y_true, train_idx, optimizer):
     optimizer.step()
 
     return loss.item()
-
 
 @torch.no_grad()
 def test(model, x, adj, y_true, split_idx, evaluator):
@@ -158,7 +104,6 @@ def main():
     parser = argparse.ArgumentParser(description='OGBN-Arxiv (Full-Batch)')
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument('--log_steps', type=int, default=1)
-    parser.add_argument('--use_sage', action='store_true')
     parser.add_argument('--num_layers', type=int, default=3)
     parser.add_argument('--hidden_channels', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.5)
@@ -171,33 +116,29 @@ def main():
     device = f'cuda:{args.device}' if torch.cuda.is_available() else 'cpu'
     device = torch.device(device)
 
-    dataset = PygNodePropPredDataset(name='ogbn-arxiv')
+    dataset = DglNodePropPredDataset(name = 'ogbn-arxiv')
+
     split_idx = dataset.get_idx_split()
+    graph, label = dataset[0] # graph: dgl graph object, label: torch tensor of shape (num_nodes, num_tasks)
 
-    data = dataset[0]
+    g = dgl.DGLGraph((graph.edges()[0], graph.edges()[1]))
+    g.add_edges(graph.edges()[1], graph.edges()[0])
+    adj = SparseTensor(row=g.edges()[0], col=g.edges()[1])
 
-    x = data.x.to(device)
-    y_true = data.y.to(device)
+    x = graph.ndata['feat'].to(device)
+    y_true = label.to(device)
+    
     train_idx = split_idx['train'].to(device)
 
-    edge_index = data.edge_index.to(device)
-    edge_index = to_undirected(edge_index, data.num_nodes)
-    adj = SparseTensor(row=edge_index[0], col=edge_index[1])
+    model = GCN(x.size(-1), args.hidden_channels, dataset.num_classes,
+                args.num_layers, args.dropout).to(device)
 
-    if args.use_sage:
-        model = SAGE(data.x.size(-1), args.hidden_channels,
-                     dataset.num_classes, args.num_layers,
-                     args.dropout).to(device)
-    else:
-        model = GCN(data.x.size(-1), args.hidden_channels, dataset.num_classes,
-                    args.num_layers, args.dropout).to(device)
-
-        # Pre-compute GCN normalization.
-        adj = adj.set_diag()
-        deg = adj.sum(dim=1).to(torch.float)
-        deg_inv_sqrt = deg.pow(-0.5)
-        deg_inv_sqrt[deg_inv_sqrt == float('inf')] = 0
-        adj = deg_inv_sqrt.view(-1, 1) * adj * deg_inv_sqrt.view(1, -1)
+    # Pre-compute GCN normalization.
+    adj = adj.set_diag()
+    deg = adj.sum(dim=1).to(torch.float)
+    deg_inv_sqrt = deg.pow(-0.5)
+    deg_inv_sqrt[deg_inv_sqrt == float('inf')] = 0
+    adj = deg_inv_sqrt.view(-1, 1) * adj * deg_inv_sqrt.view(1, -1)
 
     evaluator = Evaluator(name='ogbn-arxiv')
     logger = Logger(args.runs, args)
