@@ -33,7 +33,7 @@ class CoNet(torch.nn.Module):
         # self.layer5 = GraphConv(
         #     in_channels, out_channels)
 
-        self.w = Parameter(torch.FloatTensor(3, in_channels, out_channels))
+        self.w = Parameter(torch.FloatTensor(3, out_channels, out_channels))
         self.drop = f_drop
 
     def reset_parameters(self):
