@@ -18,7 +18,7 @@ from logger import Logger
 
 
 class CoNet(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, f_drop=0.2):
+    def __init__(self, in_channels, out_channels, f_drop=0.5):
         super(CoNet, self).__init__()
 
         self.layer1 = SAGEConv(
@@ -27,18 +27,27 @@ class CoNet(torch.nn.Module):
             in_channels, out_channels, 'pool', feat_drop=f_drop)
         self.layer3 = GraphConv(
             in_channels, out_channels)
+        self.layer4 = SAGEConv(
+            in_channels, out_channels, 'mean', feat_drop=f_drop)
+        self.layer5 = SAGEConv(
+            in_channels, out_channels, 'pool', feat_drop=f_drop)
+        self.layer6 = GraphConv(
+            in_channels, out_channels)
         # self.layer4 = GATConv(
         #     in_channels, out_channels, 1, feat_drop=f_drop)
         # self.layer5 = GraphConv(
         #     in_channels, out_channels)
 
-        self.w = Parameter(torch.tensor([0, 0, 0], dtype=torch.float))
+        self.w = Parameter(torch.tensor([0, 0, 0, 0, 0, 0], dtype=torch.float))
 
     def reset_parameters(self):
 
         self.layer1.reset_parameters()
         self.layer2.reset_parameters()
         self.layer3.reset_parameters()
+        self.layer4.reset_parameters()
+        self.layer5.reset_parameters()
+        self.layer6.reset_parameters()
         # self.layer4.reset_parameters()
         # self.layer5.reset_parameters()
 
@@ -49,13 +58,16 @@ class CoNet(torch.nn.Module):
         x1 = self.layer1(g, x)
         x2 = self.layer2(g, x)
         x3 = self.layer3(g, x)
+        x4 = self.layer4(g, x)
+        x5 = self.layer5(g, x)
+        x6 = self.layer6(g, x)
         # x4 = self.layer4(g, x)
         # x4 = x4.squeeze(1)
         # x5 = self.layer5(g, x)
 
         weights = F.softmax(self.w, dim=0)
 
-        return weights[0] * x1 + weights[1] * x2 + weights[2] * x3
+        return weights[0] * x1 + weights[1] * x2 + weights[2] * x3 + weights[3] * x4 + weights[4] * x5 + weights[5] * x6
 
 
 class GCN(torch.nn.Module):
@@ -174,7 +186,7 @@ def main():
     for run in range(args.runs):
         model.reset_parameters()
         optimizer = torch.optim.Adam(
-            model.parameters(), lr=args.lr, weight_decay=0.0001)
+            model.parameters(), lr=args.lr, weight_decay=0.001)
         for epoch in range(1, 1 + args.epochs):
             loss = train(model, g, x, y_true, train_idx, optimizer)
             result = test(model, g, x, y_true, split_idx, evaluator)
