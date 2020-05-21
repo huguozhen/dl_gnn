@@ -18,7 +18,7 @@ from logger import Logger
 
 
 class CoNet(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, f_drop=0.3):
+    def __init__(self, in_channels, out_channels, f_drop=0.5):
         super(CoNet, self).__init__()
 
         self.layer1 = SAGEConv(
