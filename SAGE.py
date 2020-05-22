@@ -17,58 +17,14 @@ from logger import Logger
 # from radam import RAdam
 
 
-class CoNet(torch.nn.Module):
-    def __init__(self, in_channels, out_channels, f_drop=0):
-        super(CoNet, self).__init__()
-
-        self.layer1 = SAGEConv(
-            in_channels, out_channels, 'mean', feat_drop=f_drop)
-        self.layer2 = GraphConv(in_channels, out_channels)
-        self.layer3 = GATConv(in_channels, out_channels, 1, feat_drop=f_drop)
-        # self.layer3 = GraphConv(in_channels, out_channels)
-        # self.layer4 = GATConv(
-        #     in_channels, out_channels, 1, feat_drop=f_drop)
-        # self.layer5 = GraphConv(
-        #     in_channels, out_channels)
-
-        self.w = Parameter(torch.tensor([1, 1, 1], dtype=torch.float))
-        # self.drop = f_drop
-
-    def reset_parameters(self):
-
-        self.layer1.reset_parameters()
-        self.layer2.reset_parameters()
-        self.layer3.reset_parameters()
-        # self.layer4.reset_parameters()
-        # self.layer5.reset_parameters()
-
-        init.uniform_(self.w)
-
-    def forward(self, g, x):
-
-        x1 = self.layer1(g, x)
-        x2 = self.layer2(g, x)
-        x3 = self.layer3(g, x)
-        x3 = x3.squeeze(1)
-        # x3 = F.dropout(x3, p=self.drop, training=self.training)
-        # x4 = self.layer4(g, x)
-        # x4 = x4.squeeze(1)
-        # x5 = self.layer5(g, x)
-
-        weights = self.w / torch.sum(self.w, 0)
-        # print(weights)
-
-        return weights[0] * x1 + weights[1] * x2 + weights[2] * x3
-
-
 class GCN(torch.nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, num_layers,
                  dropout):
         super(GCN, self).__init__()
 
-        self.layer1 = CoNet(in_channels, hidden_channels, f_drop=0)
+        self.layer1 = SAGEConv(in_channels, hidden_channels, 'mean')
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer3 = CoNet(hidden_channels, out_channels, f_drop=0)
+        self.layer3 = SAGEConv(hidden_channels, out_channels, 'mean')
         # self.layer4 = torch.nn.BatchNorm1d(hidden_channels)
         # self.layer5 = CoNet(hidden_channels, out_channels, f_drop=0.7)
         self.dropout = dropout
