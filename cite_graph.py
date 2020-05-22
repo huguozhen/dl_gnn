@@ -81,7 +81,7 @@ class Net(nn.Module):
 
 
 def load_data():
-    data = citegrh.load_pubmed()
+    data = citegrh.load_cora()
     features = th.FloatTensor(data.features)
     labels = th.LongTensor(data.labels)
     train_mask = th.BoolTensor(data.train_mask)
