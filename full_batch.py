@@ -56,7 +56,7 @@ class CoNet(torch.nn.Module):
         # x5 = self.layer5(g, x)
 
         # weights = self.w / torch.sum(self.w, 0)
-        weights = F.softmax(F.relu(self.w), 0)
+        weights = F.softmax(F.leaky_relu(self.w), 0)
         # print(weights)
 
         return weights[0] * x1 + weights[1] * x2 + weights[2] * x3
