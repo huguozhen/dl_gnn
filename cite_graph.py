@@ -94,6 +94,13 @@ class Net(nn.Module):
         return x
 
 
+def _sample_mask(idx, l):
+    """Create mask."""
+    mask = np.zeros(l)
+    mask[idx] = 1
+    return mask
+
+
 def load_data(dataset):
     if dataset == 'cora':
         data = citegrh.load_cora()
@@ -104,9 +111,13 @@ def load_data(dataset):
     features = th.FloatTensor(data.features)
     labels = th.LongTensor(data.labels)
     num_labels = data.num_labels
-    train_mask = th.BoolTensor(data.train_mask)
-    val_mask = th.BoolTensor(data.val_mask)
-    test_mask = th.BoolTensor(data.test_mask)
+    split1 = int(0.7*len(labels))
+    split2 = int(0.9*len(labels))
+    train_mask = th.BoolTensor(_sample_mask(range(split1), labels.shape[0]))
+    val_mask = th.BoolTensor(_sample_mask(
+        range(split1, split2), labels.shape[0]))
+    test_mask = th.BoolTensor(_sample_mask(
+        range(split2, labels.shape[0]-1), labels.shape[0]))
     g = DGLGraph(data.graph)
     print("Total size: {:}| Feature dims: {:}| Train size: {:}| Val size: {:}| Test size: {:}| Num of labels: {:}".format(
         features.size(0), features.size(1), len(labels[train_mask]), len(labels[val_mask]), len(labels[test_mask]), num_labels))
