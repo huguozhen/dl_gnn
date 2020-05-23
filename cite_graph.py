@@ -164,7 +164,7 @@ def evaluate(model, g, features, labels, train_mask, val_mask, test_mask):
 def main():
     parser = argparse.ArgumentParser(description='Cite Graph')
     parser.add_argument('--device', type=int, default=0)
-    parser.add_argument('--hidden_channels', type=int, default=128)
+    parser.add_argument('--hidden_channels', type=int, default=256)
     parser.add_argument('--dropout', type=float, default=0.5)
     parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--wd', type=float, default=0)
