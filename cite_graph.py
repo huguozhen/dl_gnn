@@ -172,24 +172,30 @@ def main():
 
     optimizer = th.optim.Adam(
         net.parameters(), lr=args.lr, weight_decay=args.wd)
-    final_train, final_val, final_test = 0, 0, 0
-    for epoch in range(args.epochs):
-        net.train()
-        res = net(g, features)
-        loss = F.nll_loss(res[train_mask], labels[train_mask])
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+    result = th.FloatTensor(10, 3)
+    for run in range(args.runs):
+        final_train, final_val, final_test = 0, 0, 0
+        for epoch in range(args.epochs):
+            net.train()
+            res = net(g, features)
+            loss = F.nll_loss(res[train_mask], labels[train_mask])
 
-        train_acc, val_acc, test_acc = evaluate(
-            net, g, features, labels, train_mask, val_mask, test_mask)
-        if val_acc > final_val:
-            final_train, final_val, final_test = train_acc, val_acc, test_acc
-        print("Epoch {:05d} | Loss {:.4f} | Train Acc {:.4f}| Val Acc {:.4f}| Test Acc {:.4f}".format(
-            epoch, loss.item(), train_acc, val_acc, test_acc))
-    print("Final: Train Acc {:.4f}| Val Acc {:.4f}| Test Acc {:.4f}".format(
-        train_acc, val_acc, test_acc))
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            train_acc, val_acc, test_acc = evaluate(
+                net, g, features, labels, train_mask, val_mask, test_mask)
+            if val_acc > final_val:
+                final_train, final_val, final_test = train_acc, val_acc, test_acc
+            print("Epoch {:05d} | Loss {:.4f} | Train Acc {:.4f}| Val Acc {:.4f}| Test Acc {:.4f}".format(
+                epoch, loss.item(), train_acc, val_acc, test_acc))
+        result[run] = th.FloatTensor([train_acc, val_acc, test_acc])
+        print("Epoch Final: Train Acc {:.4f}| Val Acc {:.4f}| Test Acc {:.4f}".format(
+            train_acc, val_acc, test_acc))
+    print("Final: Train Acc {:.4f}±{:.4f}| Val Acc {:.4f}±{:.4f}| Test Acc {:.4f}±{:.4f}".format(
+        result[:, 0].mean(), result[:, 0].std(), result[:, 1].mean(), result[:, 1].std(), result[:, 2].mean(), result[:, 2].std()))
 
 
 if __name__ == "__main__":
