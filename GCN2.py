@@ -21,17 +21,16 @@ class CoNet(torch.nn.Module):
     def __init__(self, in_channels, out_channels, f_drop=0):
         super(CoNet, self).__init__()
 
-        self.layer1 = SAGEConv(
-            in_channels, out_channels, 'mean', feat_drop=f_drop)
+        self.layer1 = GraphConv(in_channels, out_channels)
         self.layer2 = GraphConv(in_channels, out_channels)
-        self.layer3 = GATConv(in_channels, out_channels, 1, feat_drop=f_drop)
+        self.layer2 = GraphConv(in_channels, out_channels)
         # self.layer3 = GraphConv(in_channels, out_channels)
         # self.layer4 = GATConv(
         #     in_channels, out_channels, 1, feat_drop=f_drop)
         # self.layer5 = GraphConv(
         #     in_channels, out_channels)
 
-        self.w = Parameter(torch.tensor([1, 1, 1], dtype=torch.float))
+        self.w = Parameter(torch.FloatTensor(3, 1))
         # self.drop = f_drop
 
     def reset_parameters(self):
@@ -49,7 +48,7 @@ class CoNet(torch.nn.Module):
         x1 = self.layer1(g, x)
         x2 = self.layer2(g, x)
         x3 = self.layer3(g, x)
-        x3 = x3.squeeze(1)
+        # x3 = x3.squeeze(1)
         # x3 = F.dropout(x3, p=self.drop, training=self.training)
         # x4 = self.layer4(g, x)
         # x4 = x4.squeeze(1)

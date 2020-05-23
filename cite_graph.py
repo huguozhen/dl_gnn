@@ -40,8 +40,8 @@ class CoNet(th.nn.Module):
         x3 = self.layer3(g, x)
         x3 = x3.squeeze(1)
 
-        # weights = self.w / th.sum(self.w, 0)
-        weights = F.softmax(F.leaky_relu(self.w), 0)
+        weights = self.w / th.sum(self.w, 0)
+        # weights = F.softmax(F.leaky_relu(self.w), 0)
 
         return weights[0] * x1 + weights[1] * x2 + weights[2] * x3
 
