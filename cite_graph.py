@@ -108,6 +108,8 @@ def load_data(dataset):
     val_mask = th.BoolTensor(data.val_mask)
     test_mask = th.BoolTensor(data.test_mask)
     g = DGLGraph(data.graph)
+    print("Total size: {:}| Feature dims: {:}| Train size: {:}| Val size: {:}| Test size: {:}| Num of labels: {:}".format(
+        features.size(0), features.size(1), len(labels[train_mask]), len(labels[val_mask]), len(labels[test_mask]), num_labels))
     return g, features, labels, num_labels, train_mask, val_mask, test_mask
 
 
@@ -134,7 +136,7 @@ def main():
     parser.add_argument('--dropout', type=float, default=0.5)
     parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--wd', type=float, default=0)
-    parser.add_argument('--epochs', type=int, default=500)
+    parser.add_argument('--epochs', type=int, default=200)
     parser.add_argument('--runs', type=int, default=10)
     parser.add_argument('--dataset', type=str, default='cora')
     parser.add_argument('--model', type=str, default='AFFN')
@@ -159,6 +161,7 @@ def main():
 
     optimizer = th.optim.Adam(
         net.parameters(), lr=args.lr, weight_decay=args.wd)
+    final_train, final_val, final_test = 0, 0, 0
     for epoch in range(args.epochs):
         net.train()
         res = net(g, features)
@@ -170,8 +173,12 @@ def main():
 
         train_acc, val_acc, test_acc = evaluate(
             net, g, features, labels, train_mask, val_mask, test_mask)
+        if val_acc > final_val:
+            final_train, final_val, final_test = train_acc, val_acc, test_acc
         print("Epoch {:05d} | Loss {:.4f} | Train Acc {:.4f}| Val Acc {:.4f}| Test Acc {:.4f}".format(
             epoch, loss.item(), train_acc, val_acc, test_acc))
+    print("Final: Train Acc {:.4f}| Val Acc {:.4f}| Test Acc {:.4f}".format(
+        train_acc, val_acc, test_acc))
 
 
 if __name__ == "__main__":
