@@ -133,6 +133,18 @@ def load_data(dataset):
         features = th.FloatTensor(g.ndata['feat'].float())
         labels = th.LongTensor(g.ndata['label'])
         num_labels = int(th.max(labels) + 1)
+    elif dataset == 'coauthor-cs':
+        dataset = gnn_benckmark.Coauthor('cs')
+        g = dataset[0]
+        features = th.FloatTensor(g.ndata['feat'].float())
+        labels = th.LongTensor(g.ndata['label'])
+        num_labels = int(th.max(labels) + 1)
+    else dataset == 'coauthor-physics':
+        dataset = gnn_benckmark.Coauthor('physics')
+        g = dataset[0]
+        features = th.FloatTensor(g.ndata['feat'].float())
+        labels = th.LongTensor(g.ndata['label'])
+        num_labels = int(th.max(labels) + 1)
     split1 = int(0.7*len(labels))
     split2 = int(0.9*len(labels))
     train_mask = th.BoolTensor(_sample_mask(range(split1), labels.shape[0]))
