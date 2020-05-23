@@ -139,7 +139,7 @@ def load_data(dataset):
         features = th.FloatTensor(g.ndata['feat'].float())
         labels = th.LongTensor(g.ndata['label'])
         num_labels = int(th.max(labels) + 1)
-    else dataset == 'coauthor-physics':
+    else:
         dataset = gnn_benckmark.Coauthor('physics')
         g = dataset[0]
         features = th.FloatTensor(g.ndata['feat'].float())
