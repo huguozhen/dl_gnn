@@ -23,7 +23,7 @@ class CoNet(torch.nn.Module):
 
         self.layer1 = GraphConv(in_channels, out_channels)
         self.layer2 = GraphConv(in_channels, out_channels)
-        self.layer2 = GraphConv(in_channels, out_channels)
+        self.layer3 = GraphConv(in_channels, out_channels)
         # self.layer3 = GraphConv(in_channels, out_channels)
         # self.layer4 = GATConv(
         #     in_channels, out_channels, 1, feat_drop=f_drop)
