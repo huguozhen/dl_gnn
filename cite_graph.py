@@ -173,7 +173,7 @@ def main():
     optimizer = th.optim.Adam(
         net.parameters(), lr=args.lr, weight_decay=args.wd)
 
-    result = th.FloatTensor(10, 3)
+    result = th.FloatTensor(args.runs, 3)
     for run in range(args.runs):
         final_train, final_val, final_test = 0, 0, 0
         for epoch in range(args.epochs):
