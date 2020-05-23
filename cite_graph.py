@@ -1,17 +1,17 @@
-import argparse
-
-import numpy as np
-from dgl.data import citation_graph as citegrh
-import dgl
-import dgl.function as fn
-
-import torch as th
-import torch.nn as nn
-import torch.nn.functional as F
-from dgl import DGLGraph
-from dgl.nn.pytorch import GraphConv
-from dgl.nn.pytorch import SAGEConv
 from dgl.nn.pytorch import GATConv
+from dgl.nn.pytorch import SAGEConv
+from dgl.nn.pytorch import GraphConv
+from dgl import DGLGraph
+import torch.nn.functional as F
+import torch.nn as nn
+import torch as th
+from dgl.data import gnn_benckmark
+from dgl.data import citation_graph as citegrh
+import dgl.function as fn
+import dgl
+import numpy as np
+import argparse
+% % writefile test.py
 
 
 class CoNet(th.nn.Module):
@@ -104,13 +104,34 @@ def _sample_mask(idx, l):
 def load_data(dataset):
     if dataset == 'cora':
         data = citegrh.load_cora()
+        features = th.FloatTensor(data.features)
+        labels = th.LongTensor(data.labels)
+        num_labels = data.num_labels
+        g = DGLGraph(data.graph)
     elif dataset == 'pubmed':
         data = citegrh.load_pubmed()
-    else:
+        features = th.FloatTensor(data.features)
+        labels = th.LongTensor(data.labels)
+        num_labels = data.num_labels
+        g = DGLGraph(data.graph)
+    elif:
         data = citegrh.load_citeseer()
-    features = th.FloatTensor(data.features)
-    labels = th.LongTensor(data.labels)
-    num_labels = data.num_labels
+        features = th.FloatTensor(data.features)
+        labels = th.LongTensor(data.labels)
+        num_labels = data.num_labels
+        g = DGLGraph(data.graph)
+    elif dataset == 'amazon-computers':
+        dataset = gnn_benckmark.AmazonCoBuy('computers')
+        g = dataset[0]
+        features = th.FloatTensor(g.ndata['feat'].float())
+        labels = th.LongTensor(g.ndata['label'])
+        num_labels = int(th.max(labels) + 1)
+    else dataset == 'amazon-photo':
+        dataset = gnn_benckmark.AmazonCoBuy('photo')
+        g = dataset[0]
+        features = th.FloatTensor(g.ndata['feat'].float())
+        labels = th.LongTensor(g.ndata['label'])
+        num_labels = int(th.max(labels) + 1)
     split1 = int(0.7*len(labels))
     split2 = int(0.9*len(labels))
     train_mask = th.BoolTensor(_sample_mask(range(split1), labels.shape[0]))
@@ -118,7 +139,6 @@ def load_data(dataset):
         range(split1, split2), labels.shape[0]))
     test_mask = th.BoolTensor(_sample_mask(
         range(split2, labels.shape[0]-1), labels.shape[0]))
-    g = DGLGraph(data.graph)
     print("Total size: {:}| Feature dims: {:}| Train size: {:}| Val size: {:}| Test size: {:}| Num of labels: {:}".format(
         features.size(0), features.size(1), len(labels[train_mask]), len(labels[val_mask]), len(labels[test_mask]), num_labels))
     return g, features, labels, num_labels, train_mask, val_mask, test_mask
