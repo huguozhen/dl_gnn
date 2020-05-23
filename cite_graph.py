@@ -1,17 +1,18 @@
-from dgl.nn.pytorch import GATConv
-from dgl.nn.pytorch import SAGEConv
-from dgl.nn.pytorch import GraphConv
-from dgl import DGLGraph
-import torch.nn.functional as F
-import torch.nn as nn
-import torch as th
-from dgl.data import gnn_benckmark
-from dgl.data import citation_graph as citegrh
-import dgl.function as fn
-import dgl
-import numpy as np
 import argparse
-% % writefile test.py
+
+import numpy as np
+import dgl
+import dgl.function as fn
+from dgl.data import citation_graph as citegrh
+from dgl.data import gnn_benckmark
+
+import torch as th
+import torch.nn as nn
+import torch.nn.functional as F
+from dgl import DGLGraph
+from dgl.nn.pytorch import GraphConv
+from dgl.nn.pytorch import SAGEConv
+from dgl.nn.pytorch import GATConv
 
 
 class CoNet(th.nn.Module):
