@@ -115,7 +115,7 @@ def load_data(dataset):
         labels = th.LongTensor(data.labels)
         num_labels = data.num_labels
         g = DGLGraph(data.graph)
-    elif:
+    elif dataset == 'citeseer':
         data = citegrh.load_citeseer()
         features = th.FloatTensor(data.features)
         labels = th.LongTensor(data.labels)
@@ -127,7 +127,7 @@ def load_data(dataset):
         features = th.FloatTensor(g.ndata['feat'].float())
         labels = th.LongTensor(g.ndata['label'])
         num_labels = int(th.max(labels) + 1)
-    else dataset == 'amazon-photo':
+    elif dataset == 'amazon-photo':
         dataset = gnn_benckmark.AmazonCoBuy('photo')
         g = dataset[0]
         features = th.FloatTensor(g.ndata['feat'].float())
