@@ -168,7 +168,7 @@ def main():
     parser.add_argument('--dropout', type=float, default=0.5)
     parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--wd', type=float, default=0)
-    parser.add_argument('--epochs', type=int, default=200)
+    parser.add_argument('--epochs', type=int, default=500)
     parser.add_argument('--runs', type=int, default=10)
     parser.add_argument('--dataset', type=str, default='cora')
     parser.add_argument('--model', type=str, default='AFFN')
