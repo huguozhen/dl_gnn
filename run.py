@@ -222,7 +222,7 @@ def main():
             if val_acc > final_val:
                 final_train, final_val, final_test = train_acc, val_acc, test_acc
             print("Run {:03d} |Epoch {:05d} | Loss {:.4f} | Train Acc {:.4f}| Val Acc {:.4f}| Test Acc {:.4f}".format(
-                run, epoch, loss.item(), train_acc, val_acc, test_acc))
+                run + 1, epoch + 1, loss.item(), train_acc, val_acc, test_acc))
         result[run] = th.FloatTensor([train_acc, val_acc, test_acc])
         print("Run Final: Train Acc {:.4f}| Val Acc {:.4f}| Test Acc {:.4f}".format(
             train_acc, val_acc, test_acc))
