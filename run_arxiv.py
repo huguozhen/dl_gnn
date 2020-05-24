@@ -39,6 +39,7 @@ class CoNet(torch.nn.Module):
 
         # 特征融合权向量
         self.w = Parameter(torch.tensor([1, 1, 1], dtype=torch.float))
+        self.model = model
 
     def reset_parameters(self):
 
