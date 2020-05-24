@@ -72,9 +72,9 @@ class Net(torch.nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, model, dropout):
         super(Net, self).__init__()
 
-        self.layer1 = CoNet(in_channels, hidden_channels)
+        self.layer1 = CoNet(in_channels, hidden_channels, model)
         self.layer2 = torch.nn.BatchNorm1d(hidden_channels)
-        self.layer3 = CoNet(hidden_channels, out_channels)
+        self.layer3 = CoNet(hidden_channels, out_channels, model)
 
         self.dropout = dropout
 
